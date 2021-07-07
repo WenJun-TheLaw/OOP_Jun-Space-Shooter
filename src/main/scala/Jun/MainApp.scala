@@ -7,8 +7,15 @@ import scalafxml.core.{NoDependencyResolver, FXMLView, FXMLLoader}
 import javafx.{scene => jfxs}
 import scalafx.stage.{Stage}
 import scalafx.scene.image.Image
+import Jun.util.Database
+import Jun.model.Score
+import scalafx.scene.canvas.Canvas
 
 object MainApp extends JFXApp {
+  //initialize database
+  Database.setupDB()
+  Score.scoreData ++= Score.AllScores
+
   // transform path of RootLayout.fxml to URI for resource location.
   val rootResource = getClass.getResourceAsStream("view/RootLayout.fxml")
   // initialize the loader object.
@@ -20,18 +27,28 @@ object MainApp extends JFXApp {
   // initialize stage
   stage = new PrimaryStage {
     title = "Jun Space Shooter"
-    scene = new Scene {
+      scene = new Scene {
       root = roots
     }
   }
 
-  def showWelcome() = {
-    val resource = getClass.getResourceAsStream("view/Welcome.fxml")
+  def showMainMenu() = {
+    val resource = getClass.getResourceAsStream("view/MainMenu.fxml")
     val loader = new FXMLLoader(null, NoDependencyResolver)
     loader.load(resource);
     val roots = loader.getRoot[jfxs.layout.AnchorPane]
     MainApp.roots.setCenter(roots)
   } 
+
+  def showGame() = {
+    val resource = getClass.getResourceAsStream("view/Game.fxml")
+    val loader = new FXMLLoader(null, NoDependencyResolver)
+    loader.load(resource);
+    val roots = loader.getRoot[jfxs.layout.AnchorPane]
+    MainApp.roots.setCenter(roots)
+  }
+
+
   // call to display Welcome when app start
-  showWelcome()
+  showMainMenu()
 }

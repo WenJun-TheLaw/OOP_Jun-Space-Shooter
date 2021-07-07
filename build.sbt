@@ -12,4 +12,12 @@ addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.fu
 // https://mvnrepository.com/artifact/org.apache.derby/derby
 libraryDependencies += "org.apache.derby" % "derby" % "10.12.1.1"
 
+// Scala 2.12, 2.13
+libraryDependencies ++= Seq(
+  "org.scalikejdbc" %% "scalikejdbc"       % "3.5.0",
+  "com.h2database"  %  "h2"                % "1.4.200",
+  "ch.qos.logback"  %  "logback-classic"   % "1.2.3"
+)
+
+
 fork := true
