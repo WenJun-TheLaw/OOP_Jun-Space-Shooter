@@ -9,7 +9,7 @@ import scalafx.stage.{Stage}
 import scalafx.scene.image.Image
 import Jun.util.Database
 import Jun.model.Score
-import scalafx.scene.canvas.Canvas
+import javafx.{scene => jfxs}
 
 object MainApp extends JFXApp {
   //initialize database
@@ -24,12 +24,12 @@ object MainApp extends JFXApp {
   loader.load(rootResource)
   // retrieve the root component BorderPane from the FXML 
   val roots = loader.getRoot[jfxs.layout.BorderPane]
+  var mainScene : Scene = new Scene(roots)
   // initialize stage
   stage = new PrimaryStage {
     title = "Jun Space Shooter"
-      scene = new Scene {
-      root = roots
-    }
+      scene = mainScene
+    icons += new Image(getClass.getResourceAsStream("/Images/icon.png"))
   }
 
   def showMainMenu() = {

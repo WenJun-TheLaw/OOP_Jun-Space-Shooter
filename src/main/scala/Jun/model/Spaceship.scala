@@ -3,27 +3,27 @@ package Jun.model
 abstract class Spaceship(
     private var _health : Int, 
     private var _damage : Int, 
-    private var _centerX : Long, 
-    private var _centerY : Long){
+    private var _sprite : Sprite,
+    private var _speed : Double){
 
     //Accessor
     def health = _health 
     def damage = _damage
-    def centerX = _centerX
-    def centerY = _centerY
-
+    def sprite = _sprite
+    def speed = _speed
 
     //Mutator
     def damage_=(newDamage : Int){
         _damage = newDamage
     }
-    def centerX_=(X : Long){
-        _centerX = X
+    def sprite_=(sprite : Sprite){
+        _sprite = sprite
     }
-    def centerY_=(Y : Long){
-        _centerY = Y
+    def speed_=(speed : Double){
+        _speed = speed
     }
 
+    //Functions
     def takeDamage(damageTaken : Int){
         _health -= damageTaken
     }
