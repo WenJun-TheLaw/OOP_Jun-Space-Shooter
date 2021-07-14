@@ -18,6 +18,9 @@ import scalafx.scene.input.KeyEvent
 import scalafx.scene.input.KeyCode
 import scalafx.animation.AnimationTimer
 import scalafx.scene.layout.AnchorPane
+import Jun.model.Enemy
+import Jun.model.Laser
+import scala.collection.mutable.ListBuffer
 
 object MainApp extends JFXApp {
   //initialize database
@@ -74,12 +77,12 @@ object MainApp extends JFXApp {
     scene.root = new AnchorPane(){
       children = List(canvas)
     } 
-    var gc : GraphicsContext = canvas.graphicsContext2D
+    val gc : GraphicsContext = canvas.graphicsContext2D
 
-    //Player
+    //Player Sprites
     val playerShip = new Image(getClass.getResourceAsStream("/Images/player_ship.png"))
-    val playerSprite = new Sprite(playerShip, 100, 200, 0, 0, playerShip.width.toDouble, playerShip.height.toDouble)
-    val player = new Player(100, 10, playerSprite, 1.0)
+    val playerSprite = new Sprite(playerShip, 100, 200, 0, 0, playerShip.getWidth(), playerShip.getHeight())
+    val player = new Player(100, 10, playerSprite, 250.0)
     player.sprite.render(gc)
 
     //Input
@@ -87,48 +90,107 @@ object MainApp extends JFXApp {
     var rightPress = false
     var upPress = false 
     var downPress = false
+    var shootPress = false
     scene.onKeyPressed = (key : KeyEvent) => {
-      println("Key Pressed")
       if(key.code == KeyCode.W) upPress = true
       if(key.code == KeyCode.A) leftPress = true
-      if(key.code == KeyCode.S) rightPress = true
-      if(key.code == KeyCode.D) downPress = true
+      if(key.code == KeyCode.S) downPress = true
+      if(key.code == KeyCode.D) rightPress = true
+      if(key.code == KeyCode.Space) shootPress = true
     }
 
     scene.onKeyReleased = (key : KeyEvent) => {
-      println("Key Released")
-      if(key.getCode == KeyCode.W) upPress = false
-      if(key.getCode == KeyCode.A) leftPress = false
-      if(key.getCode == KeyCode.S) rightPress = false
-      if(key.getCode == KeyCode.D) downPress = false
+      if(key.code == KeyCode.W) upPress = false
+      if(key.code == KeyCode.A) leftPress = false
+      if(key.code == KeyCode.S) downPress = false
+      if(key.code == KeyCode.D) rightPress = false
+      if(key.code == KeyCode.Space) shootPress = false
     }
 
+    //List of stuffs (Bullets, enemies etc)
+    var laserListB : ListBuffer[Laser] = ListBuffer()
+    var enemyListB : ListBuffer[Enemy] = ListBuffer()
 
-    var startTime = System.nanoTime()
-    val timer = AnimationTimer( t => {
-      def handle(currentNanoTime : Long){
-        println("Current Nano time: " + currentNanoTime)
-          val delta = (currentNanoTime - startTime)/ 1000000000.0; 
-          player.sprite.update(delta) 
-          player.sprite.render(gc)
+    var lastNanoTime = 0D
+    var lastShootNano = 0D
+    val timer = AnimationTimer( currentNanoTime => {
+      //Calculating time since last frame for frame independant rendering
+      val elapsedTime : Double = (currentNanoTime - lastNanoTime) / 1000000000.0;
+      lastNanoTime = currentNanoTime;
 
-          if(upPress){
-            player.sprite.velocityY = 1 * player.speed
-            player.sprite.update(delta)
-          }
-          if(leftPress){
-            player.sprite.velocityX = -1 * player.speed
-            player.sprite.update(delta)
-          }
-          if(rightPress){
-            player.sprite.velocityX = 1 * player.speed
-            player.sprite.update(delta)
-          }
-          if(downPress){
-            player.sprite.velocityY = -1 * player.speed
-            player.sprite.update(delta)
-          }
+      //Input check
+      player.sprite.velocityX = 0
+      player.sprite.velocityY = 0
+      if(upPress){
+        player.sprite.velocityY += -1 * player.speed
       }
+      if(leftPress){
+        player.sprite.velocityX += -1 * player.speed
+      }
+      if(rightPress){
+        player.sprite.velocityX += 1 * player.speed
+      }
+      if(downPress){
+        player.sprite.velocityY += 1 * player.speed
+      }
+      if(shootPress){
+        val now = System.nanoTime()
+        //Checking for atkSpeed cooldwon
+        if((lastShootNano <= 0L) || ((now - lastShootNano) >= player.atkSpeed)){
+          laserListB += player.shoot
+        }
+        lastShootNano = now
+      }
+      
+      //Updating position, checking collisions
+      //Player
+      player.sprite.update(elapsedTime)
+      //Bullets & Enemies
+      for(enemy <- enemyListB){
+        enemy.sprite.update(elapsedTime)
+      }
+
+      for(laser <- laserListB){
+        laser.sprite.update(elapsedTime)
+        println("Updating (" + laserListB.indexOf(laser) + ") :" + laser.sprite.positionX.toInt + " || " + laser.sprite.positionY.toInt)
+        //Collision check
+        if(laser.isPlayer){
+          for(enemy <- enemyListB){
+            if(laser.sprite.intersects(enemy.sprite)){
+              enemy.takeDamage(laser.damage)
+              laserListB -= laser
+            }
+          }
+        }
+        else{
+          if(laser.sprite.intersects(player.sprite)){
+            player.takeDamage(laser.damage)
+            laserListB -= laser
+          }
+        }
+
+        //Didnt hit anything, check if its not in the scene anymore
+        if(!laser.sprite.getBoundary().intersects(0, 0 ,scene.getWidth(), scene.getHeight())){
+          laserListB -= laser
+        }
+      }
+      
+
+      //Rendering
+      //Player
+      gc.clearRect(0, 0, scene.getWidth(), scene.getHeight())
+      player.sprite.render(gc)
+
+      //Bullets
+      val laserList = laserListB.toList
+      for(laser <- laserList){
+        laser.sprite.render(gc)
+      }
+      //Enemies
+      for(enemy <- enemyListB){
+
+      }
+
     })
     timer.start()
     

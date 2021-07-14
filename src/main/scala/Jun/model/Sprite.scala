@@ -52,7 +52,7 @@ class Sprite(
     }
  
     def render(gc : GraphicsContext){
-        gc.drawImage(_image, _positionX, _positionY );
+        gc.drawImage(_image, _positionX, _positionY);
     }
  
     def getBoundary() : Rectangle2D = {
