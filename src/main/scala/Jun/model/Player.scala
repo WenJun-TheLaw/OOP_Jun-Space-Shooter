@@ -10,17 +10,20 @@ class Player(
     extends Spaceship (_health, _damage, _sprite, _speed){
     
     //Initializing default variables
-    private var _atkSpeed : Double = 500000000
+    private var _atkSpeed : Double = 700
     private var _maxHealth : Int = 100
     private var _healthRegen : Double = 0.5
-    private var _level : Int = 0
+    private var _level : Int = 1
     private var _exp : Int = 0
-    private val LevelUpEXP = 100
+    private val _LevelUpEXP = 100
 
     //Accessor
     def maxHealth = _maxHealth 
     def healthRegen = _healthRegen
     def atkSpeed = _atkSpeed
+    def exp = _exp
+    def LevelUpEXP = _LevelUpEXP
+    def level = _level
 
     //Mutator
     def maxHealth_=(maxHealth : Int){
@@ -41,6 +44,13 @@ class Player(
         }
     }
 
+    def heal(heal : Int){
+        _health += heal
+        if(_health > maxHealth){
+            _health = maxHealth
+        }
+    }
+
     def levelUp(){
         _exp -= LevelUpEXP
         _level += 1
@@ -53,10 +63,14 @@ class Player(
         val atkSprite = new Sprite(atkImg, 0, 0, 0, 0, atkImg.getWidth(), atkImg.getHeight())
         val laser_ = new Laser(atkSprite, _damage, true)
         laser_.sprite.velocityX = 0 
-        laser_.sprite.velocityY = -400 
+        laser_.sprite.velocityY = -600 
         laser_.sprite.positionX = _sprite.positionX + (_sprite.width / 2)  //Center laser horizontally on player sprite
         laser_.sprite.positionY = _sprite.positionY - 10                   //Slight offset to be a bit higher than the player sprite
         laser_
+    }
+
+    def death(){
+
     }
 
 }

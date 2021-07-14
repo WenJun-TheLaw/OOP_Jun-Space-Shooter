@@ -28,11 +28,12 @@ abstract class Spaceship(
     //Functions
     def takeDamage(damageTaken : Int){
         _health -= damageTaken
+        if(_health <= 0){
+            death()
+        }
     }
 
-    def heal(heal : Int){
-        _health += heal
-    }
+    def death()
 
 
 }
