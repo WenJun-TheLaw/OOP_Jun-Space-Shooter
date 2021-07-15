@@ -6,23 +6,26 @@ abstract class Spaceship(
     private var _health : Int, 
     private var _damage : Int, 
     private val _sprite : Sprite,
-    private var _speed : Double){
+    private var _speed  : Double){
 
-    private val _id : UUID = UUID.randomUUID()
+    val _id : UUID = UUID.randomUUID()
 
     //Accessor
-    def health = _health 
-    def damage = _damage
-    def sprite = _sprite
-    def speed = _speed
-    def id = _id
+    def health  = _health 
+    def damage  = _damage
+    def sprite  = _sprite
+    def speed   = _speed
+    def id      = _id
 
     //Mutator
+    def health_=(newHealth : Int){
+        _health = newHealth
+    }
     def damage_=(newDamage : Int){
         _damage = newDamage
     }
-    def speed_=(speed : Double){
-        _speed = speed
+    def speed_=(newSpeed : Double){
+        _speed = newSpeed
     }
 
     //Functions
@@ -35,5 +38,9 @@ abstract class Spaceship(
 
     def death()
 
+    
+
+    
+    
 
 }

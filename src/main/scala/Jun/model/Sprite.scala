@@ -3,6 +3,8 @@ package Jun.model
 import scalafx.scene.image.Image
 import scalafx.scene.canvas.GraphicsContext
 import scalafx.geometry.Rectangle2D
+import Jun.MainApp
+import Jun.JunMath
 
 class Sprite(
     private var _image : Image,
@@ -46,7 +48,25 @@ class Sprite(
     }  
 
     //Functions
+    /**
+     * Update the position of the sprite, clamps it within the scene 
+    */    
     def update(time : Double){
+        val width = MainApp.stage.getWidth - _width
+        val height = MainApp.stage.getHeight - _height
+        _positionX += _velocityX * time;
+        _positionY += _velocityY * time;
+        if(_positionX >= width || _positionX < 0){
+            _positionX = JunMath.clamp(_positionX, 0, width)
+        }
+        if(_positionY >= height || _positionY < 0){
+            _positionY = JunMath.clamp(_positionY, 0, height)
+        }
+    }
+    /**
+     * Update the position of the sprite without clamping, used for lasers so they will be deleted if they exit the scene
+    */
+    def updateNoClamp(time : Double){
         _positionX += _velocityX * time;
         _positionY += _velocityY * time;
     }

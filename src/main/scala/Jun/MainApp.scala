@@ -1,4 +1,5 @@
 package Jun
+
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.Scene
@@ -29,6 +30,11 @@ import scalafx.geometry.VPos
 import scalafx.scene.text.Font
 import Jun.model.EnemySpawner
 import scalafx.stage.Modality
+import Jun.view.LevelUpDialogController
+import scalafx.application.Platform
+import java.awt.geom.CubicCurve2D
+import javax.swing.event.ChangeListener
+import scalafx.beans.value.ObservableValue
 
 object MainApp extends JFXApp {
   //initialize database
@@ -72,9 +78,28 @@ object MainApp extends JFXApp {
   showMainMenu()
 
 
+  //Timers
   var shootTimer : Timer = null
   var animTimer : AnimationTimer = null
+  //Input
+  var leftPress = false
+  var rightPress = false
+  var upPress = false 
+  var downPress = false
+  var isShooting = false
+  var readyToShoot = true
+  var controllsEnabled = true
+  shootTimer = new Timer()
+  var shootCD : TimerTask = null
+  var shoot : TimerTask = null
+  //List of stuffs (Bullets, enemies etc)
+  var laserListB : ListBuffer[Laser] = ListBuffer()
+  var enemyListB : ListBuffer[Enemy] = ListBuffer()
   var player : Player = null
+  //EnemySpawner runs on separate thread, so adding volatile gurantees synchronization 
+  @volatile var spawnEnemy = true
+
+
   /**
    * Initialize the game and start game loop
    */
@@ -85,58 +110,50 @@ object MainApp extends JFXApp {
 
     //Setting up GraphicsContext
     val scene = stage.getScene()
-    val canvas = new Canvas(stage.getWidth, stage.getHeight())
+    val canvas = new Canvas(stage.getWidth, stage.getHeight)
     scene.root = new AnchorPane(){
       children = List(canvas)
     } 
     val gc : GraphicsContext = canvas.graphicsContext2D
 
     //Player Sprites
+    val startX = stage.getWidth / 2
+    val startY = stage.getHeight * 0.9
     val playerShip = new Image(getClass.getResourceAsStream("/Images/player_ship.png"))
-    val playerSprite = new Sprite(playerShip, 100, 200, 0, 0, playerShip.getWidth(), playerShip.getHeight())
-    player = new Player(100, 10, playerSprite, 250.0)
+    val playerSprite = new Sprite(playerShip, startX, startY, 0, 0, playerShip.getWidth(), playerShip.getHeight())
+    player = new Player(100, 20, playerSprite, 400.0)
     player.sprite.render(gc)
 
-    //List of stuffs (Bullets, enemies etc)
-    var laserListB : ListBuffer[Laser] = ListBuffer()
-    var enemyListB : ListBuffer[Enemy] = ListBuffer()
-
     //EnemySpawner
-    val enemySpawner = new Thread(new EnemySpawner(enemyListB))
+    val enemySpawner = new Thread(new EnemySpawner)
     //Spawning enemies
+    spawnEnemy = true
     enemySpawner.start()
 
-    //Input
-    var leftPress = false
-    var rightPress = false
-    var upPress = false 
-    var downPress = false
-    var isShooting = false
-    var readyToShoot = true
-    shootTimer = new Timer()
-    var shootCD : TimerTask = null
-    var shoot : TimerTask = null
+    //Input detection
     scene.onKeyPressed = (key : KeyEvent) => {
-      if(key.code == KeyCode.W) upPress = true
-      if(key.code == KeyCode.A) leftPress = true
-      if(key.code == KeyCode.S) downPress = true
-      if(key.code == KeyCode.D) rightPress = true
-      if(key.code == KeyCode.Space){
-        if(readyToShoot){
-          //A TimerTask to inform that shoot cooldown is over, player can shoot again
-          shootCD = new TimerTask{
-            override def run(): Unit = readyToShoot = true
-          }
-          //Check if player is already shooting
-          if(!isShooting){
-            //A TimerTask that repeats to continuously shoot
-            shoot = new TimerTask{
-              override def run(): Unit = laserListB += player.shoot
+      if(controllsEnabled){
+        if(key.code == KeyCode.W) upPress = true
+        if(key.code == KeyCode.A) leftPress = true
+        if(key.code == KeyCode.S) downPress = true
+        if(key.code == KeyCode.D) rightPress = true
+        if(key.code == KeyCode.Space){
+          if(readyToShoot){
+            //A TimerTask to inform that shoot cooldown is over, player can shoot again
+            shootCD = new TimerTask{
+              override def run(): Unit = readyToShoot = true
             }
-            shootTimer.scheduleAtFixedRate(shoot, 0, player.atkSpeed.toLong)
-            shootTimer.schedule(shootCD, player.atkSpeed.toLong)
-            readyToShoot = false
-            isShooting = true
+            //Check if player is already shooting
+            if(!isShooting){
+              //A TimerTask that repeats to continuously shoot
+              shoot = new TimerTask{
+                override def run(): Unit = laserListB += player.shoot
+              }
+              shootTimer.scheduleAtFixedRate(shoot, 0, (1000 / player.atkSpeed).toLong)
+              shootTimer.schedule(shootCD, (1000 / player.atkSpeed).toLong)
+              readyToShoot = false
+              isShooting = true
+            }
           }
         }
       }
@@ -153,6 +170,14 @@ object MainApp extends JFXApp {
           isShooting = false
         }
       }
+    }
+
+    //If user resize stage, resize the canvas
+    stage.widthProperty().addListener{ (o, oldNum , newNum) =>
+      canvas.setWidth(newNum.floatValue())
+    }
+    stage.heightProperty().addListener{ (o, oldNum , newNum) =>
+      canvas.setHeight(newNum.floatValue())
     }
 
     var lastNanoTime = 0D
@@ -186,7 +211,8 @@ object MainApp extends JFXApp {
       }
 
       for(laser <- laserListB){
-        laser.sprite.update(elapsedTime)
+        //Check sprite for details
+        laser.sprite.updateNoClamp(elapsedTime)
         //Collision check
         if(laser.isPlayer){
           for(enemy <- enemyListB){
@@ -239,13 +265,9 @@ object MainApp extends JFXApp {
     
   }
 
-  def endGame(){
-    //Stopping timers
-    animTimer.stop
-    shootTimer.cancel
-  }
 
-  def levelUpDialog(player : Player){
+  //Level up dialog
+  def showLevelUpDialog(player : Player){
     val resource = getClass.getResourceAsStream("view/LevelUpDialog.fxml")
     val loader = new FXMLLoader(null, NoDependencyResolver)
     loader.load(resource);
@@ -259,9 +281,43 @@ object MainApp extends JFXApp {
         root = roots2      
       }
     }
+    
+    //Pause inputs
+    controllsEnabled = false
+    leftPress = false
+    rightPress = false
+    upPress = false 
+    downPress = false
+    shoot.cancel()
+    isShooting = false
+    readyToShoot = true
+
     control.dialogStage = dialog
     control.player = player
-    dialog.showAndWait()
-    control.okClicked
+    control.level = player.level
+    control.setText
+    Platform.runLater(dialog.showAndWait())
+    controllsEnabled = true
   }
+
+  
+  def endGame(){
+    //Stopping timers, killing all enemies
+    spawnEnemy = false
+    try{
+      if(animTimer != null) animTimer.stop
+      if(shootTimer != null) shootTimer.cancel
+      for(enemy <- enemyListB){
+        enemy.enemyShootTimer.cancel
+      }
+    }
+    catch{
+      case e : NullPointerException => e.printStackTrace
+      case _ : Throwable => println("Exception found when ending game")
+    }
+    
+  }
+
+  
+  
 }
