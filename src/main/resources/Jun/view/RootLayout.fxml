@@ -20,7 +20,7 @@
           </Menu>
           <Menu text="_Controls">
             <items>
-              <MenuItem text="_Show Controls">
+              <MenuItem onAction="#showControls" text="_Show Controls">
                      <accelerator>
                         <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator></MenuItem>
@@ -28,7 +28,7 @@
           </Menu>
           <Menu text="_About">
             <items>
-              <MenuItem text="Abo_ut">
+              <MenuItem onAction="#showAbout" text="Abo_ut">
                      <accelerator>
                         <KeyCodeCombination alt="UP" code="U" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator></MenuItem>

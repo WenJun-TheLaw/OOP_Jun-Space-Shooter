@@ -105,7 +105,6 @@ class EnemySpawner() extends Runnable{
                 case _ : Throwable => println("Unexpected error when spawning enemies")
             }
         }
-        
     }
   
 }

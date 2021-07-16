@@ -35,6 +35,12 @@ import scalafx.application.Platform
 import java.awt.geom.CubicCurve2D
 import javax.swing.event.ChangeListener
 import scalafx.beans.value.ObservableValue
+import Jun.view.GameOverController
+import scalafx.scene.layout.BackgroundImage
+import scalafx.scene.layout.BackgroundRepeat
+import scalafx.scene.layout.BackgroundSize
+import scalafx.scene.layout.BackgroundPosition
+import scalafx.scene.layout.Background
 
 object MainApp extends JFXApp {
   //initialize database
@@ -91,6 +97,7 @@ object MainApp extends JFXApp {
   var notPaused = true
   var shootCD : TimerTask = null
   var shoot : TimerTask = null
+  var enemySpawner : Thread = null
   //List of stuffs (Bullets, enemies etc)
   var laserListB : ListBuffer[Laser] = ListBuffer()
   var enemyListB : ListBuffer[Enemy] = ListBuffer()
@@ -106,12 +113,18 @@ object MainApp extends JFXApp {
     val resource = getClass.getResourceAsStream("view/Game.fxml")
     val loader = new FXMLLoader(null, NoDependencyResolver)
     loader.load(resource);
+    val roots = loader.getRoot[jfxs.layout.AnchorPane]
+    val bgImage = new Image(getClass.getResourceAsStream("/Images/bg_blue.png"))
+    val bgImageArray = Array(new BackgroundImage(bgImage, BackgroundRepeat.Repeat, BackgroundRepeat.Repeat, BackgroundPosition.Default ,BackgroundSize.Default))
+    
 
     //Setting up GraphicsContext
     val scene = stage.getScene()
+    scene.fill
     val canvas = new Canvas(stage.getWidth, stage.getHeight)
     scene.root = new AnchorPane(){
       children = List(canvas)
+      background = new Background(bgImageArray)
     } 
     val gc : GraphicsContext = canvas.graphicsContext2D
 
@@ -145,7 +158,7 @@ object MainApp extends JFXApp {
     player.sprite.render(gc)
 
     //EnemySpawner
-    val enemySpawner = new Thread(new EnemySpawner)
+    enemySpawner = new Thread(new EnemySpawner)
     //Spawning enemies
     spawnEnemy = true
     enemySpawner.start()
@@ -305,7 +318,7 @@ object MainApp extends JFXApp {
       for(enemy <- enemyListB){
         enemy.enemyTimer.cancel
       }
-
+      if(enemySpawner != null) enemySpawner.interrupt
       stage.getScene.onKeyPressed  = null
       stage.getScene.onKeyReleased = null
     }
@@ -354,9 +367,12 @@ object MainApp extends JFXApp {
   def showEnd() = { 
     stage.getScene.root = roots 
 
-    val resource = getClass.getResourceAsStream("view/GameOver.fxml")
+    //Saving score
+    val resource2 = getClass.getResourceAsStream("view/GameOver.fxml")
     val loader2 = new FXMLLoader(null, NoDependencyResolver)
-    loader2.load(resource);
+    loader2.load(resource2)
+    val control = loader2.getController[GameOverController#Controller]
+    control.addScore()
     val root2 = loader2.getRoot[jfxs.layout.AnchorPane]
     roots.setCenter(root2)
   }

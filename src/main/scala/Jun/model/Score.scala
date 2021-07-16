@@ -12,8 +12,8 @@ class Score (val nameS : String, val scoreI : Int) extends Database {
 	def this()  = this(null, 0)
 	var id      = ObjectProperty[Long](-1)
 	var name    = new StringProperty(nameS)
-    var score   = IntegerProperty(scoreI)
-	var date    = ObjectProperty[LocalDate](LocalDate.of(2021, 1, 1))
+    var score   = ObjectProperty[Integer](scoreI)
+	var date    = new StringProperty(LocalDate.now.asString)
 
 
 	def save() : Try[Long] = {
@@ -21,7 +21,7 @@ class Score (val nameS : String, val scoreI : Int) extends Database {
 			Try(DB autoCommit { implicit session => 
 				id.value = sql"""
 					insert into score (name, score, date) values 
-						(${name.value}, ${score.value}, ${date.value.asString})
+						(${name.value}, ${score.value}, ${date.value})
 				""".updateAndReturnGeneratedKey.apply()
 				id.value
 			})
@@ -32,7 +32,7 @@ class Score (val nameS : String, val scoreI : Int) extends Database {
 				set 
 				name  = ${name.value} ,
 				score = ${score.value},
-				date  = ${date.value.asString}
+				date  = ${date.value}
 				where id = ${id.value} 
 				""".update.apply().toLong
 			})
@@ -76,9 +76,8 @@ object Score extends Database{
 
 		new Score(nameS, scoreI) {
 			id.value    = _id
-			date.value  = dateS.parseLocalDate
+			date.value  = dateS
 		}
-		
 	}
 	def initializeTable() = {
 		DB autoCommit { implicit session => 
