@@ -53,7 +53,7 @@ class Sprite(
     */    
     def update(time : Double){
         val width = MainApp.stage.getWidth - _width
-        val height = MainApp.stage.getHeight - _height
+        val height = MainApp.stage.getHeight - (_height * 1.5)
         _positionX += _velocityX * time;
         _positionY += _velocityY * time;
         if(_positionX >= width || _positionX < 0){

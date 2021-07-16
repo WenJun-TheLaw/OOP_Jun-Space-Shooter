@@ -52,7 +52,7 @@ object MainApp extends JFXApp {
   // initialize stage
   stage = new PrimaryStage {
     title = "Jun Space Shooter"
-      scene = new Scene(roots)
+    scene = new Scene(roots)
     icons += new Image(getClass.getResourceAsStream("/Images/icon.png"))
   }
 
@@ -88,7 +88,7 @@ object MainApp extends JFXApp {
   var downPress = false
   var isShooting = false
   var readyToShoot = true
-  var controllsEnabled = true
+  var notPaused = true
   shootTimer = new Timer()
   var shootCD : TimerTask = null
   var shoot : TimerTask = null
@@ -121,7 +121,7 @@ object MainApp extends JFXApp {
     val startY = stage.getHeight * 0.9
     val playerShip = new Image(getClass.getResourceAsStream("/Images/player_ship.png"))
     val playerSprite = new Sprite(playerShip, startX, startY, 0, 0, playerShip.getWidth(), playerShip.getHeight())
-    player = new Player(100, 20, playerSprite, 400.0)
+    player = new Player(200, 20, playerSprite, 450.0)
     player.sprite.render(gc)
 
     //EnemySpawner
@@ -132,7 +132,7 @@ object MainApp extends JFXApp {
 
     //Input detection
     scene.onKeyPressed = (key : KeyEvent) => {
-      if(controllsEnabled){
+      if(notPaused){
         if(key.code == KeyCode.W) upPress = true
         if(key.code == KeyCode.A) leftPress = true
         if(key.code == KeyCode.S) downPress = true
@@ -203,38 +203,39 @@ object MainApp extends JFXApp {
       }
       
       //Updating position, checking collisions
-      //Player
-      player.sprite.update(elapsedTime)
-      //Bullets & Enemies
-      for(enemy <- enemyListB){
-        enemy.sprite.update(elapsedTime)
-      }
+      if(notPaused){  
+        //Player
+        player.sprite.update(elapsedTime)
+        //Bullets & Enemies
+        for(enemy <- enemyListB){
+          enemy.sprite.update(elapsedTime)
+        }
 
-      for(laser <- laserListB){
-        //Check sprite for details
-        laser.sprite.updateNoClamp(elapsedTime)
-        //Collision check
-        if(laser.isPlayer){
-          for(enemy <- enemyListB){
-            if(laser.sprite.intersects(enemy.sprite)){
-              enemy.takeDamage(laser.damage)
+        for(laser <- laserListB){
+          //Check sprite for details
+          laser.sprite.updateNoClamp(elapsedTime)
+          //Collision check
+          if(laser.isPlayer){
+            for(enemy <- enemyListB){
+              if(laser.sprite.intersects(enemy.sprite)){
+                enemy.takeDamage(laser.damage)
+                laserListB -= laser
+              }
+            }
+          }
+          else{
+            if(laser.sprite.intersects(player.sprite)){
+              player.takeDamage(laser.damage)
               laserListB -= laser
             }
           }
-        }
-        else{
-          if(laser.sprite.intersects(player.sprite)){
-            player.takeDamage(laser.damage)
+
+          //Didnt hit anything, check if its not in the scene anymore
+          if(!laser.sprite.getBoundary().intersects(0, 0 ,scene.getWidth(), scene.getHeight())){
             laserListB -= laser
           }
         }
-
-        //Didnt hit anything, check if its not in the scene anymore
-        if(!laser.sprite.getBoundary().intersects(0, 0 ,scene.getWidth(), scene.getHeight())){
-          laserListB -= laser
-        }
       }
-      
 
       //Rendering
       //Player
@@ -265,6 +266,34 @@ object MainApp extends JFXApp {
     
   }
 
+  //Resume the game
+  def resume(){
+    notPaused = true
+    for(enemy <- enemyListB){
+      enemy.enemyTimer = new Timer()
+      enemy.shoot
+      enemy.chase
+    }
+  }
+  
+  def endGame(){
+    //Stopping timers, killing all enemies
+    spawnEnemy = false
+    try{
+      if(animTimer != null) animTimer.stop
+      if(shootTimer != null) shootTimer.cancel
+      for(enemy <- enemyListB){
+        enemy.enemyTimer.cancel
+      }
+
+      stage.getScene.onKeyPressed  = null
+      stage.getScene.onKeyReleased = null
+    }
+    catch{
+      case e : NullPointerException => e.printStackTrace
+      case _ : Throwable => println("Exception found when ending game")
+    }
+  }
 
   //Level up dialog
   def showLevelUpDialog(player : Player){
@@ -282,8 +311,8 @@ object MainApp extends JFXApp {
       }
     }
     
-    //Pause inputs
-    controllsEnabled = false
+    //Pause inputs and enemies
+    notPaused = false
     leftPress = false
     rightPress = false
     upPress = false 
@@ -291,32 +320,27 @@ object MainApp extends JFXApp {
     shoot.cancel()
     isShooting = false
     readyToShoot = true
-
+    for(enemy <- enemyListB){
+      enemy.enemyTimer.cancel
+    }
     control.dialogStage = dialog
     control.player = player
     control.level = player.level
     control.setText
     Platform.runLater(dialog.showAndWait())
-    controllsEnabled = true
   }
 
-  
-  def endGame(){
-    //Stopping timers, killing all enemies
-    spawnEnemy = false
-    try{
-      if(animTimer != null) animTimer.stop
-      if(shootTimer != null) shootTimer.cancel
-      for(enemy <- enemyListB){
-        enemy.enemyShootTimer.cancel
-      }
-    }
-    catch{
-      case e : NullPointerException => e.printStackTrace
-      case _ : Throwable => println("Exception found when ending game")
-    }
-    
+  //End game summary page
+  def showEnd() = { 
+    stage.getScene.root = roots 
+
+    val resource = getClass.getResourceAsStream("view/GameOver.fxml")
+    val loader2 = new FXMLLoader(null, NoDependencyResolver)
+    loader2.load(resource);
+    val root2 = loader2.getRoot[jfxs.layout.AnchorPane]
+    roots.setCenter(root2)
   }
+
 
   
   

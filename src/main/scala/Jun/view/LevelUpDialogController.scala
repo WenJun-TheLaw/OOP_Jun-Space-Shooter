@@ -6,6 +6,7 @@ import _root_.Jun.model.Player
 import scalafx.stage.Stage
 import scalafx.scene.control.Button
 import scalafx.scene.text.Text
+import _root_.Jun.MainApp
 
 @sfxml
 class LevelUpDialogController(
@@ -37,24 +38,24 @@ class LevelUpDialogController(
 
     //Functions
     def handleAtkUp(action : ActionEvent){
-        player.damage += 10
+        player.damage += 20
         handleConfirm
     }
 
     def handleAtkSpeedUp(action : ActionEvent){
-        player.atkSpeed += 0.4
+        player.atkSpeed += 0.5
         handleConfirm
-        //TODO: Change atk speed to 1000 / atkSpeed 
-        //Eg: atkSpeed = 2 means 1 atk every 500 ms
     }
 
     def handleMaxHpUp(action : ActionEvent){
-        player.maxHealth += 20
+        player.maxHealth += 25
         handleConfirm
     }
 
     def handleConfirm(){
-        dialogStage.close()
+        player.heal(player.maxHealth)
+        dialogStage.close
+        MainApp.resume
     }
 
     def setText(){
