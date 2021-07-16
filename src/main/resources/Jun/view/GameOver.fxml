@@ -12,21 +12,20 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-
 <AnchorPane prefHeight="900.0" prefWidth="1600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Jun.view.GameOverController">
    <children>
       <SplitPane dividerPositions="0.4" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <items>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
                <children>
-                  <Label layoutX="38.0" layoutY="34.0" text="Title">
+                  <Label fx:id="title" layoutX="38.0" layoutY="34.0" text="Title">
                      <font>
                         <Font size="36.0" />
                      </font>
                   </Label>
                   <HBox layoutY="798.0" spacing="20.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0">
                      <children>
-                        <Button fx:id="restartButton" mnemonicParsing="false" prefHeight="50.0" prefWidth="200.0" text="Restart" textAlignment="CENTER">
+                        <Button fx:id="restartButton" mnemonicParsing="false" onAction="#handleRestart" prefHeight="50.0" prefWidth="200.0" text="Restart" textAlignment="CENTER">
                            <font>
                               <Font size="24.0" />
                            </font>
@@ -34,7 +33,7 @@
                               <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                            </padding>
                         </Button>
-                        <Button fx:id="quitButton" mnemonicParsing="false" prefHeight="50.0" prefWidth="200.0" text="Quit" textAlignment="CENTER">
+                        <Button fx:id="quitButton" mnemonicParsing="false" onAction="#handleClose" prefHeight="50.0" prefWidth="200.0" text="Quit" textAlignment="CENTER">
                            <font>
                               <Font size="24.0" />
                            </font>
@@ -44,7 +43,7 @@
                         </Button>
                      </children>
                   </HBox>
-                  <Text layoutX="38.0" layoutY="113.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Post Game Summary" wrappingWidth="241.7109375">
+                  <Text fx:id="summary" layoutX="38.0" layoutY="113.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Post Game Summary" wrappingWidth="550.0">
                      <font>
                         <Font size="24.0" />
                      </font>
@@ -57,6 +56,7 @@
                     <columnConstraints>
                       <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                       <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                     </columnConstraints>
                     <rowConstraints>
                       <RowConstraints minHeight="10.0" percentHeight="15.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -241,6 +241,91 @@
                            <font>
                               <Font name="Roboto Regular" size="24.0" />
                            </font>
+                        </Label>
+                        <Label alignment="CENTER" text="Date" textAlignment="CENTER" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.valignment="CENTER">
+                           <font>
+                              <Font size="48.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="date1" text="Date 1" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date2" text="Date 2" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date3" text="Date 3" GridPane.columnIndex="2" GridPane.rowIndex="3">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date4" text="Date 4" GridPane.columnIndex="2" GridPane.rowIndex="4">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date5" text="Date 5" GridPane.columnIndex="2" GridPane.rowIndex="5">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date6" text="Date 6" GridPane.columnIndex="2" GridPane.rowIndex="6">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date7" text="Date 7" GridPane.columnIndex="2" GridPane.rowIndex="7">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date8" text="Date 8" GridPane.columnIndex="2" GridPane.rowIndex="8">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date9" text="Date 9" GridPane.columnIndex="2" GridPane.rowIndex="9">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
+                        </Label>
+                        <Label fx:id="date10" text="Date 10" GridPane.columnIndex="2" GridPane.rowIndex="10">
+                           <font>
+                              <Font size="24.0" />
+                           </font>
+                           <GridPane.margin>
+                              <Insets left="10.0" />
+                           </GridPane.margin>
                         </Label>
                      </children>
                   </GridPane>

@@ -17,15 +17,14 @@ class Score (val nameS : String, val scoreI : Int) extends Database {
 
 
 	def save() : Try[Long] = {
-		if (!(isExist)) {
+		if (!isExist) {
 			Try(DB autoCommit { implicit session => 
 				id.value = sql"""
 					insert into score (name, score, date) values 
 						(${name.value}, ${score.value}, ${date.value.asString})
 				""".updateAndReturnGeneratedKey.apply()
 				id.value
-			}
-			)
+			})
 		} else {
 			Try(DB autoCommit { implicit session => 
 				sql"""

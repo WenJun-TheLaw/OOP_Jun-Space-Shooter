@@ -79,7 +79,7 @@ object MainApp extends JFXApp {
 
 
   //Timers
-  var shootTimer : Timer = null
+  var shootTimer : Timer = new Timer()
   var animTimer : AnimationTimer = null
   //Input
   var leftPress = false
@@ -89,7 +89,6 @@ object MainApp extends JFXApp {
   var isShooting = false
   var readyToShoot = true
   var notPaused = true
-  shootTimer = new Timer()
   var shootCD : TimerTask = null
   var shoot : TimerTask = null
   //List of stuffs (Bullets, enemies etc)
@@ -115,6 +114,27 @@ object MainApp extends JFXApp {
       children = List(canvas)
     } 
     val gc : GraphicsContext = canvas.graphicsContext2D
+
+    //Timers
+    shootTimer = new Timer()
+    animTimer = null
+    //Input
+    leftPress = false
+    rightPress = false
+    upPress = false 
+    downPress = false
+    isShooting = false
+    readyToShoot = true
+    notPaused = true
+    shootTimer = new Timer()
+    shootCD = null
+    shoot = null
+    //List of stuffs (Bullets, enemies etc)
+    laserListB = ListBuffer()
+    enemyListB = ListBuffer()
+    player = null
+    //EnemySpawner runs on separate thread, so adding volatile gurantees synchronization 
+    spawnEnemy = true
 
     //Player Sprites
     val startX = stage.getWidth / 2
