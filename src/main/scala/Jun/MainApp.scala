@@ -28,7 +28,6 @@ import scalafx.scene.paint.Color
 import scalafx.scene.text.TextAlignment
 import scalafx.geometry.VPos
 import scalafx.scene.text.Font
-import Jun.model.EnemySpawner
 import scalafx.stage.Modality
 import Jun.view.LevelUpDialogController
 import scalafx.application.Platform
@@ -41,6 +40,11 @@ import scalafx.scene.layout.BackgroundRepeat
 import scalafx.scene.layout.BackgroundSize
 import scalafx.scene.layout.BackgroundPosition
 import scalafx.scene.layout.Background
+import Jun.controller.AudioController
+import scalafx.scene.media.MediaView
+import Jun.controller.EnemySpawner
+import scalafx.scene.media.MediaPlayer
+import Jun.view.GameController
 
 object MainApp extends JFXApp {
   //initialize database
@@ -59,7 +63,7 @@ object MainApp extends JFXApp {
   stage = new PrimaryStage {
     title = "Jun Space Shooter"
     scene = new Scene(roots)
-    icons += new Image(getClass.getResourceAsStream("/Images/icon.png"))
+    icons += new Image(getClass.getResourceAsStream("/images/icon.png"))
   }
 
   def showMainMenu() = {
@@ -71,11 +75,6 @@ object MainApp extends JFXApp {
   } 
 
   def showGame() = {
-    val resource = getClass.getResourceAsStream("view/Game.fxml")
-    val loader = new FXMLLoader(null, NoDependencyResolver)
-    loader.load(resource);
-    val roots = loader.getRoot[jfxs.layout.AnchorPane]
-    MainApp.roots.setCenter(roots)
     initGame()
   }
 
@@ -102,6 +101,8 @@ object MainApp extends JFXApp {
   var laserListB : ListBuffer[Laser] = ListBuffer()
   var enemyListB : ListBuffer[Enemy] = ListBuffer()
   var player : Player = null
+  var gameController : GameController#Controller = null
+  var gameRoots : AnchorPane = null
   //EnemySpawner runs on separate thread, so adding volatile gurantees synchronization 
   @volatile var spawnEnemy = true
 
@@ -110,24 +111,33 @@ object MainApp extends JFXApp {
    * Initialize the game and start game loop
    */
   def initGame() = {
+    //Setting up scene root child nodes
     val resource = getClass.getResourceAsStream("view/Game.fxml")
     val loader = new FXMLLoader(null, NoDependencyResolver)
     loader.load(resource);
-    val roots = loader.getRoot[jfxs.layout.AnchorPane]
-    val bgImage = new Image(getClass.getResourceAsStream("/Images/bg_blue.png"))
+    gameRoots = loader.getRoot[jfxs.layout.AnchorPane]
+    gameController = loader.getController[GameController#Controller]
+    MainApp.roots.setCenter(gameRoots)
+
+    //Background Image
+    val bgImage = new Image(getClass.getResourceAsStream("/images/bg_blue.png"))
     val bgImageArray = Array(new BackgroundImage(bgImage, BackgroundRepeat.Repeat, BackgroundRepeat.Repeat, BackgroundPosition.Default ,BackgroundSize.Default))
-    
+    gameRoots.background = new Background(bgImageArray)
+
+    //Audio Controller
+    val audioController = new AudioController
+    audioController.init()
+    audioController.start()
+    //Apparently MediaPlayers get garbage collected if not in MediaView
+    //https://stackoverflow.com/questions/26775260/javafx-audio-stopped-after-seconds
+    gameController.mediaView = new MediaView(audioController.mediaPlayer)
 
     //Setting up GraphicsContext
     val scene = stage.getScene()
-    scene.fill
-    val canvas = new Canvas(stage.getWidth, stage.getHeight)
-    scene.root = new AnchorPane(){
-      children = List(canvas)
-      background = new Background(bgImageArray)
-    } 
+    val canvas = gameController.canvas
     val gc : GraphicsContext = canvas.graphicsContext2D
-
+    gameRoots.children = List(gameController.canvas, gameController.mediaView)
+    
     //Timers
     shootTimer = new Timer()
     animTimer = null
@@ -152,7 +162,7 @@ object MainApp extends JFXApp {
     //Player Sprites
     val startX = stage.getWidth / 2
     val startY = stage.getHeight * 0.9
-    val playerShip = new Image(getClass.getResourceAsStream("/Images/player_ship.png"))
+    val playerShip = new Image(getClass.getResourceAsStream("/images/player_ship.png"))
     val playerSprite = new Sprite(playerShip, startX, startY, 0, 0, playerShip.getWidth(), playerShip.getHeight())
     player = new Player(200, 20, playerSprite, 450.0)
     player.sprite.render(gc)
@@ -356,12 +366,14 @@ object MainApp extends JFXApp {
     for(enemy <- enemyListB){
       enemy.enemyTimer.cancel
     }
+
     control.dialogStage = dialog
     control.player = player
     control.level = player.level
     control.setText
     Platform.runLater(dialog.showAndWait())
   }
+
 
   //End game summary page
   def showEnd() = { 
@@ -377,6 +389,11 @@ object MainApp extends JFXApp {
     roots.setCenter(root2)
   }
 
+  def updateMediaView(newPlayer: MediaPlayer){
+    println("Updated media view")
+    gameController.mediaView = new MediaView(newPlayer)
+    gameRoots.children = List(gameController.canvas, gameController.mediaView)
+  }
 
   
   

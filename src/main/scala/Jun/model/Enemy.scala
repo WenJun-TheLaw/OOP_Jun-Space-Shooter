@@ -2,11 +2,11 @@ package Jun.model
 
 import scala.collection.mutable.ListBuffer
 import org.apache.derby.impl.tools.sysinfo.Main
-import Jun.MainApp
 import java.util.Timer
 import java.util.TimerTask
 import scalafx.scene.image.Image
 import scala.util.Random
+import Jun.MainApp
 
 class Enemy(
     var health_ : Int, 
@@ -18,6 +18,7 @@ class Enemy(
     
     private var _atkSpeed : Double = 1.2
     private var _enemyTimer = new Timer()
+    private var dead = false
 
     //Accessor
     def exp = _exp  
@@ -37,6 +38,7 @@ class Enemy(
 
     //Functions
     override def death() {
+        dead = true
         _enemyTimer.cancel()
         MainApp.player.getEXP(_exp)
         MainApp.enemyListB -= this 
@@ -46,17 +48,23 @@ class Enemy(
         //A TimerTask that repeats to continuously shoot
         val shootTask = new TimerTask{
             override def run(): Unit = {
-                //Laser sprites
-                val atkImg = new Image(getClass.getResourceAsStream("/Images/small_laser_red.png"))
-                val atkSprite = new Sprite(atkImg, 0, 0, 0, 0, atkImg.getWidth(), atkImg.getHeight())
-                val laser_ = new Laser(atkSprite, damage, false)
-                laser_.sprite.velocityX = 0 
-                laser_.sprite.velocityY = 700 
-                laser_.sprite.positionX = sprite.positionX + (sprite.width / 2)  //Center laser horizontally on enemy sprite
-                laser_.sprite.positionY = sprite.positionY + sprite.height       //Slight offset to be a bit lower than the enemy sprite
-                MainApp.laserListB += laser_
+                if(!dead){
+                    //Laser sprites
+                    val atkImg = new Image(getClass.getResourceAsStream("/images/small_laser_red.png"))
+                    val atkSprite = new Sprite(atkImg, 0, 0, 0, 0, atkImg.getWidth(), atkImg.getHeight())
+                    val laser_ = new Laser(atkSprite, damage, false)
+                    laser_.sprite.velocityX = 0 
+                    laser_.sprite.velocityY = 700 
+                    laser_.sprite.positionX = sprite.positionX + (sprite.width / 2)  //Center laser horizontally on enemy sprite
+                    laser_.sprite.positionY = sprite.positionY + sprite.height       //Slight offset to be a bit lower than the enemy sprite
+                    MainApp.laserListB += laser_
+                }
+                else{
+                    this.cancel
+                }
             }
         }
+        
         enemyTimer.scheduleAtFixedRate(shootTask, 0, (1000 / _atkSpeed).toLong)
     }      
 

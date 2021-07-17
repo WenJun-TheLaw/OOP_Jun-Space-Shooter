@@ -59,7 +59,7 @@ class Player(
 
     def shoot() = {
         //Laser sprites
-        val atkImg = new Image(getClass.getResourceAsStream("/Images/small_laser_blue.png"))
+        val atkImg = new Image(getClass.getResourceAsStream("/images/small_laser_blue.png"))
         val atkSprite = new Sprite(atkImg, 0, 0, 0, 0, atkImg.getWidth(), atkImg.getHeight())
         val laser_ = new Laser(atkSprite, damage, true)
         laser_.sprite.velocityX = 0 
