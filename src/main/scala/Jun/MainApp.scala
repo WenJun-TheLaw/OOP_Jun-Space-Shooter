@@ -1,0 +1,452 @@
+package Jun
+
+import scalafx.application.JFXApp
+import scalafx.application.JFXApp.PrimaryStage
+import scalafx.scene.Scene
+import scalafx.Includes._
+import scalafxml.core.{NoDependencyResolver, FXMLView, FXMLLoader}
+import javafx.{scene => jfxs}
+import scalafx.stage.{Stage}
+import scalafx.scene.image.Image
+import Jun.util.Database
+import Jun.model.Score
+import javafx.{scene => jfxs}
+import scalafx.scene.canvas.GraphicsContext
+import scalafx.scene.canvas.Canvas
+import Jun.model.Sprite
+import Jun.model.Player
+import scalafx.scene.input.KeyEvent
+import scalafx.scene.input.KeyCode
+import scalafx.animation.AnimationTimer
+import scalafx.scene.layout.AnchorPane
+import Jun.model.Enemy
+import Jun.model.Laser
+import scala.collection.mutable.ListBuffer
+import java.util.Timer
+import java.util.TimerTask
+import scalafx.scene.paint.Color
+import scalafx.scene.text.TextAlignment
+import scalafx.geometry.VPos
+import scalafx.scene.text.Font
+import scalafx.stage.Modality
+import Jun.view.LevelUpDialogController
+import scalafx.application.Platform
+import java.awt.geom.CubicCurve2D
+import javax.swing.event.ChangeListener
+import scalafx.beans.value.ObservableValue
+import Jun.view.GameOverController
+import scalafx.scene.layout.BackgroundImage
+import scalafx.scene.layout.BackgroundRepeat
+import scalafx.scene.layout.BackgroundSize
+import scalafx.scene.layout.BackgroundPosition
+import scalafx.scene.layout.Background
+import Jun.controller.AudioController
+import scalafx.scene.media.MediaView
+import Jun.controller.EnemySpawner
+import scalafx.scene.media.MediaPlayer
+import Jun.view.GameController
+import Jun.view.ControlDialogController
+
+object MainApp extends JFXApp {
+  //initialize database
+  Database.setupDB()
+  Score.scoreData ++= Score.AllScores
+
+  // transform path of RootLayout.fxml to URI for resource location.
+  val rootResource = getClass.getResourceAsStream("view/RootLayout.fxml")
+  // initialize the loader object.
+  val loader = new FXMLLoader(null, NoDependencyResolver)
+  // Load root layout from fxml file.
+  loader.load(rootResource)
+  // retrieve the root component BorderPane from the FXML 
+  val roots = loader.getRoot[jfxs.layout.BorderPane]
+  // initialize stage
+  stage = new PrimaryStage {
+    title = "Jun Space Shooter"
+    scene = new Scene{
+      root = roots
+      //https://stackoverflow.com/questions/33764821/loadstylesheetunprivileged-error-when-trying-to-use-css-stylesheet-with-javafx
+      stylesheets += getClass.getResource("view/stylesheet.css").toExternalForm()
+    }
+    icons += new Image(getClass.getResourceAsStream("/images/icon.png"))
+  }
+
+  
+  def showMainMenu() = {
+    val resource = getClass.getResourceAsStream("view/MainMenu.fxml")
+    val loader = new FXMLLoader(null, NoDependencyResolver)
+    loader.load(resource);
+    val roots = loader.getRoot[jfxs.layout.AnchorPane]
+    MainApp.roots.setCenter(roots)
+  } 
+
+  def showGame() = {
+    initGame()
+  }
+
+
+  // call to display Welcome when app start
+  showMainMenu()
+
+
+  //Timers
+  var shootTimer : Timer = new Timer()
+  var animTimer : AnimationTimer = null
+  //Input
+  var leftPress = false
+  var rightPress = false
+  var upPress = false 
+  var downPress = false
+  var isShooting = false
+  var readyToShoot = true
+  @volatile var notPaused = true
+  var shootCD : TimerTask = null
+  var shoot : TimerTask = null
+  var enemySpawner : Thread = null
+  //List of stuffs (Bullets, enemies etc)
+  var laserListB : ListBuffer[Laser] = ListBuffer()
+  var enemyListB : ListBuffer[Enemy] = ListBuffer()
+  var player : Player = null
+  var playerName : String = null
+  var gameController : GameController#Controller = null
+  var audioController : AudioController = null
+  var volume : Double = 50
+  var gameRoots : AnchorPane = null
+  //EnemySpawner runs on separate thread, so adding volatile gurantees synchronization 
+  @volatile var spawnEnemy = true
+
+
+  /**
+   * Initialize the game and start game loop
+   */
+  def initGame() = {
+    //Setting up scene root child nodes
+    val resource = getClass.getResourceAsStream("view/Game.fxml")
+    val loader = new FXMLLoader(null, NoDependencyResolver)
+    loader.load(resource);
+    gameRoots = loader.getRoot[jfxs.layout.AnchorPane]
+    gameController = loader.getController[GameController#Controller]
+    MainApp.roots.setCenter(gameRoots)
+
+    //Background Image
+    val bgImage = new Image(getClass.getResourceAsStream("/images/bg_blue.png"))
+    val bgImageArray = Array(new BackgroundImage(bgImage, BackgroundRepeat.Repeat, BackgroundRepeat.Repeat, BackgroundPosition.Default ,BackgroundSize.Default))
+    gameRoots.background = new Background(bgImageArray)
+
+    //Audio Controller
+    if(audioController == null) audioController = new AudioController
+    audioController.init()
+    audioController.start()
+    audioController.volume_=(volume)
+    //Apparently MediaPlayers get garbage collected if not in MediaView
+    //https://stackoverflow.com/questions/26775260/javafx-audio-stopped-after-seconds
+    gameController.mediaView = new MediaView(audioController.mediaPlayer)
+
+    //Setting up GraphicsContext
+    val scene = stage.getScene()
+    val canvas = gameController.canvas
+    val gc : GraphicsContext = canvas.graphicsContext2D
+    gameRoots.children = List(gameController.canvas, gameController.mediaView)
+    
+    //Timers
+    shootTimer = new Timer()
+    animTimer = null
+    //Input
+    leftPress = false
+    rightPress = false
+    upPress = false 
+    downPress = false
+    isShooting = false
+    readyToShoot = true
+    notPaused = true
+    shootTimer = new Timer()
+    shootCD = null
+    shoot = null
+    //List of stuffs (Bullets, enemies etc)
+    laserListB = ListBuffer()
+    enemyListB = ListBuffer()
+    player = null
+    //EnemySpawner runs on separate thread, so adding volatile gurantees synchronization 
+    spawnEnemy = true
+
+    //Player Sprites
+    val startX = stage.getWidth / 2
+    val startY = stage.getHeight * 0.9
+    val playerShip = new Image(getClass.getResourceAsStream("/images/player_ship.png"))
+    val playerSprite = new Sprite(playerShip, startX, startY, 0, 0, playerShip.getWidth(), playerShip.getHeight())
+    player = new Player(200, 20, playerSprite, 450.0)
+    if(playerName != null) player.name = playerName
+    println("Player name is " + player.name)
+    player.sprite.render(gc)
+
+    //EnemySpawner
+    enemySpawner = new Thread(new EnemySpawner)
+    //Spawning enemies
+    spawnEnemy = true
+    enemySpawner.start()
+
+    //Input detection
+    scene.onKeyPressed = (key : KeyEvent) => {
+      if(notPaused){
+        if(key.code == KeyCode.W) upPress = true
+        if(key.code == KeyCode.A) leftPress = true
+        if(key.code == KeyCode.S) downPress = true
+        if(key.code == KeyCode.D) rightPress = true
+        if(key.code == KeyCode.Space){
+          if(readyToShoot){
+            //A TimerTask to inform that shoot cooldown is over, player can shoot again
+            shootCD = new TimerTask{
+              override def run(): Unit = readyToShoot = true
+            }
+            //Check if player is already shooting
+            if(!isShooting){
+              //A TimerTask that repeats to continuously shoot
+              shoot = new TimerTask{
+                override def run(): Unit = laserListB += player.shoot
+              }
+              shootTimer.scheduleAtFixedRate(shoot, 0, (1000 / player.atkSpeed).toLong)
+              shootTimer.schedule(shootCD, (1000 / player.atkSpeed).toLong)
+              readyToShoot = false
+              isShooting = true
+            }
+          }
+        }
+      }
+    }
+
+    scene.onKeyReleased = (key : KeyEvent) => {
+      if(key.code == KeyCode.W) upPress = false
+      if(key.code == KeyCode.A) leftPress = false
+      if(key.code == KeyCode.S) downPress = false
+      if(key.code == KeyCode.D) rightPress = false
+      if(key.code == KeyCode.Space){
+        if(isShooting){
+          shoot.cancel()
+          isShooting = false
+        }
+      }
+    }
+
+    //If user resize stage, resize the canvas
+    stage.widthProperty().addListener{ (o, oldNum , newNum) =>
+      canvas.setWidth(newNum.floatValue())
+    }
+    stage.heightProperty().addListener{ (o, oldNum , newNum) =>
+      canvas.setHeight(newNum.floatValue())
+    }
+
+    var lastNanoTime = 0D
+    animTimer = AnimationTimer( currentNanoTime => {
+      //Calculating time since last frame for frame independant rendering
+      val elapsedTime : Double = (currentNanoTime - lastNanoTime) / 1000000000.0;
+      lastNanoTime = currentNanoTime;
+
+      //Input check
+      player.sprite.velocityX = 0
+      player.sprite.velocityY = 0
+      if(upPress){
+        player.sprite.velocityY += -1 * player.speed
+      }
+      if(leftPress){
+        player.sprite.velocityX += -1 * player.speed
+      }
+      if(rightPress){
+        player.sprite.velocityX += 1 * player.speed
+      }
+      if(downPress){
+        player.sprite.velocityY += 1 * player.speed
+      }
+      
+      //Updating position, checking collisions
+      if(notPaused){  
+        //Player
+        player.sprite.update(elapsedTime)
+        //Bullets & Enemies
+        for(enemy <- enemyListB){
+          enemy.sprite.update(elapsedTime)
+        }
+
+        for(laser <- laserListB){
+          //Check sprite for details
+          laser.sprite.updateNoClamp(elapsedTime)
+          //Collision check
+          if(laser.isPlayer){
+            for(enemy <- enemyListB){
+              if(laser.sprite.intersects(enemy.sprite)){
+                enemy.takeDamage(laser.damage)
+                laserListB -= laser
+              }
+            }
+          }
+          else{
+            if(laser.sprite.intersects(player.sprite)){
+              player.takeDamage(laser.damage)
+              laserListB -= laser
+            }
+          }
+
+          //Didnt hit anything, check if its not in the scene anymore
+          if(!laser.sprite.getBoundary().intersects(0, 0 ,scene.getWidth(), scene.getHeight())){
+            laserListB -= laser
+          }
+        }
+      }
+      //Rendering
+      if(notPaused){
+        //Player
+        gc.clearRect(0, 0, scene.getWidth(), scene.getHeight())
+        player.sprite.render(gc)
+
+        //Bullets
+        val laserList = laserListB.toList
+        for(laser <- laserList){
+          laser.sprite.render(gc)
+        }
+        //Enemies
+        for(enemy <- enemyListB){
+          enemy.sprite.render(gc)
+        }
+      }
+      //Graphical UI (GUI)
+      gc.font = Font.loadFont(getClass.getResource("/fonts/kenvector_future.ttf").toExternalForm(), 30)
+      gc.setFill(Color.White)
+      gc.setTextAlign(TextAlignment.Left);
+      gc.setTextBaseline(VPos.CENTER)
+      val healthStr : String = "Health: " + player.health + " / " + player.maxHealth
+      val expStr : String = "Exp: " +  player.exp + " / " + player.LevelUpEXP + " (Level " + player.level + ")"
+      gc.fillText(healthStr, 0, 15)
+      gc.fillText(expStr, 0, 55)
+
+    })
+    animTimer.start()
+    
+  }
+
+  //Resume the game
+  def resume(){
+    notPaused = true
+    for(enemy <- enemyListB){
+      enemy.enemyTimer = new Timer()
+      enemy.shoot
+      enemy.chase
+    }
+  }
+  
+  def endGame(){
+    //Stopping timers, killing all enemies
+    spawnEnemy = false
+    try{
+      if(animTimer != null) animTimer.stop
+      if(shootTimer != null) shootTimer.cancel
+      for(enemy <- enemyListB){
+        enemy.enemyTimer.cancel
+        enemyListB -= enemy
+      }
+      if(enemySpawner != null) enemySpawner.interrupt
+      stage.getScene.onKeyPressed  = null
+      stage.getScene.onKeyReleased = null
+      if(audioController != null) audioController.pause
+    }
+    catch{
+      case e : NullPointerException => e.printStackTrace
+      case _ : Throwable => println("Exception found when ending game")
+    }
+  }
+
+  //End game summary page
+  def showEnd() = { 
+    stage.getScene.root = roots 
+
+    //Saving score
+    val resource2 = getClass.getResourceAsStream("view/GameOver.fxml")
+    val loader2 = new FXMLLoader(null, NoDependencyResolver)
+    loader2.load(resource2)
+    val control = loader2.getController[GameOverController#Controller]
+    control.addScore()
+    val root2 = loader2.getRoot[jfxs.layout.AnchorPane]
+    roots.setCenter(root2)
+  }
+
+  def updateMediaView(newPlayer: MediaPlayer){
+    println("Updated media view")
+    gameController.mediaView = new MediaView(newPlayer)
+    gameRoots.children = List(gameController.canvas, gameController.mediaView)
+  }
+
+  //Level up dialog
+  def showLevelUpDialog(player : Player){
+    val resource = getClass.getResourceAsStream("view/LevelUpDialog.fxml")
+    val loader = new FXMLLoader(null, NoDependencyResolver)
+    loader.load(resource);
+    val roots2  = loader.getRoot[jfxs.Parent]
+    val control = loader.getController[LevelUpDialogController#Controller]
+
+    val dialog = new Stage() {
+      initModality(Modality.ApplicationModal)
+      initOwner(stage)
+      title = "Level Up"
+      scene = new Scene {
+        root = roots2    
+        stylesheets += getClass.getResource("view/stylesheet.css").toExternalForm()  
+      }
+    }
+    
+    //Pause inputs and enemies
+    notPaused = false
+    leftPress = false
+    rightPress = false
+    upPress = false 
+    downPress = false
+    if(shoot != null) shoot.cancel()
+    isShooting = false
+    readyToShoot = true
+    for(enemy <- enemyListB){
+      enemy.enemyTimer.cancel
+    }
+
+    control.dialogStage = dialog
+    control.player = player
+    control.level = player.level
+    control.setText
+    Platform.runLater(dialog.showAndWait())
+  }
+
+  //Level up dialog
+  def showControlDialog(){
+    val resource = getClass.getResourceAsStream("view/ControlDialog.fxml")
+    val loader = new FXMLLoader(null, NoDependencyResolver)
+    loader.load(resource);
+    val roots2  = loader.getRoot[jfxs.Parent]
+    val control = loader.getController[ControlDialogController#Controller]
+
+    val dialog = new Stage() {
+      initModality(Modality.ApplicationModal)
+      initOwner(stage)
+      title = "Controls"
+      scene = new Scene {
+        root = roots2     
+        stylesheets += getClass.getResource("view/stylesheet.css").toExternalForm() 
+      }
+    }
+    
+    //Pause inputs and enemies
+    notPaused = false
+    leftPress = false
+    rightPress = false
+    upPress = false 
+    downPress = false
+    if(shoot != null) shoot.cancel()
+    isShooting = false
+    readyToShoot = true
+    for(enemy <- enemyListB){
+      enemy.enemyTimer.cancel
+    }
+
+    control.dialogStage = dialog
+    control.audioController = audioController
+    Platform.runLater(dialog.showAndWait())
+  }
+
+  
+  
+}

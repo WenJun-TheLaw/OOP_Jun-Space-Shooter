@@ -1,0 +1,30 @@
+@font-face {
+    font-family: 'KenVector Future';
+    src: url("../../fonts/kenvector_future.ttf");
+}
+
+.text{
+    font-family: 'KenVector Future';
+    -fx-font-family: 'KenVector Future';
+    -fx-font-size: 20px;
+    font-size: 20px;
+}
+
+.title{
+    font-family: 'KenVector Future';
+    -fx-font-family: 'KenVector Future';
+    font-size: 32px;
+    -fx-font-size: 32px;
+}
+
+.button{
+    font-family: 'KenVector Future';
+    -fx-font-family: 'KenVector Future';
+    font-size: 24px;
+    -fx-font-size: 24px;
+}
+
+.white{
+    color: white;
+}
+

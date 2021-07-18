@@ -1,7 +1,10 @@
 
-.vscode
-project
-.metals
+
 .bloop
 .bsp
+.metals
+.vscode
+myDB
+project
 target
+derby.log
