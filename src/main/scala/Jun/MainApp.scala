@@ -45,6 +45,7 @@ import scalafx.scene.media.MediaView
 import Jun.controller.EnemySpawner
 import scalafx.scene.media.MediaPlayer
 import Jun.view.GameController
+import Jun.view.ControlDialogController
 
 object MainApp extends JFXApp {
   //initialize database
@@ -62,10 +63,15 @@ object MainApp extends JFXApp {
   // initialize stage
   stage = new PrimaryStage {
     title = "Jun Space Shooter"
-    scene = new Scene(roots)
+    scene = new Scene{
+      root = roots
+      //https://stackoverflow.com/questions/33764821/loadstylesheetunprivileged-error-when-trying-to-use-css-stylesheet-with-javafx
+      stylesheets += getClass.getResource("view/stylesheet.css").toExternalForm()
+    }
     icons += new Image(getClass.getResourceAsStream("/images/icon.png"))
   }
 
+  
   def showMainMenu() = {
     val resource = getClass.getResourceAsStream("view/MainMenu.fxml")
     val loader = new FXMLLoader(null, NoDependencyResolver)
@@ -93,7 +99,7 @@ object MainApp extends JFXApp {
   var downPress = false
   var isShooting = false
   var readyToShoot = true
-  var notPaused = true
+  @volatile var notPaused = true
   var shootCD : TimerTask = null
   var shoot : TimerTask = null
   var enemySpawner : Thread = null
@@ -101,7 +107,10 @@ object MainApp extends JFXApp {
   var laserListB : ListBuffer[Laser] = ListBuffer()
   var enemyListB : ListBuffer[Enemy] = ListBuffer()
   var player : Player = null
+  var playerName : String = null
   var gameController : GameController#Controller = null
+  var audioController : AudioController = null
+  var volume : Double = 50
   var gameRoots : AnchorPane = null
   //EnemySpawner runs on separate thread, so adding volatile gurantees synchronization 
   @volatile var spawnEnemy = true
@@ -125,9 +134,10 @@ object MainApp extends JFXApp {
     gameRoots.background = new Background(bgImageArray)
 
     //Audio Controller
-    val audioController = new AudioController
+    if(audioController == null) audioController = new AudioController
     audioController.init()
     audioController.start()
+    audioController.volume_=(volume)
     //Apparently MediaPlayers get garbage collected if not in MediaView
     //https://stackoverflow.com/questions/26775260/javafx-audio-stopped-after-seconds
     gameController.mediaView = new MediaView(audioController.mediaPlayer)
@@ -165,6 +175,8 @@ object MainApp extends JFXApp {
     val playerShip = new Image(getClass.getResourceAsStream("/images/player_ship.png"))
     val playerSprite = new Sprite(playerShip, startX, startY, 0, 0, playerShip.getWidth(), playerShip.getHeight())
     player = new Player(200, 20, playerSprite, 450.0)
+    if(playerName != null) player.name = playerName
+    println("Player name is " + player.name)
     player.sprite.render(gc)
 
     //EnemySpawner
@@ -279,26 +291,27 @@ object MainApp extends JFXApp {
           }
         }
       }
-
       //Rendering
-      //Player
-      gc.clearRect(0, 0, scene.getWidth(), scene.getHeight())
-      player.sprite.render(gc)
+      if(notPaused){
+        //Player
+        gc.clearRect(0, 0, scene.getWidth(), scene.getHeight())
+        player.sprite.render(gc)
 
-      //Bullets
-      val laserList = laserListB.toList
-      for(laser <- laserList){
-        laser.sprite.render(gc)
-      }
-      //Enemies
-      for(enemy <- enemyListB){
-        enemy.sprite.render(gc)
+        //Bullets
+        val laserList = laserListB.toList
+        for(laser <- laserList){
+          laser.sprite.render(gc)
+        }
+        //Enemies
+        for(enemy <- enemyListB){
+          enemy.sprite.render(gc)
+        }
       }
       //Graphical UI (GUI)
-      gc.setFill(Color.Black)
+      gc.font = Font.loadFont(getClass.getResource("/fonts/kenvector_future.ttf").toExternalForm(), 30)
+      gc.setFill(Color.White)
       gc.setTextAlign(TextAlignment.Left);
       gc.setTextBaseline(VPos.CENTER)
-      gc.font = new Font(30)
       val healthStr : String = "Health: " + player.health + " / " + player.maxHealth
       val expStr : String = "Exp: " +  player.exp + " / " + player.LevelUpEXP + " (Level " + player.level + ")"
       gc.fillText(healthStr, 0, 15)
@@ -327,53 +340,18 @@ object MainApp extends JFXApp {
       if(shootTimer != null) shootTimer.cancel
       for(enemy <- enemyListB){
         enemy.enemyTimer.cancel
+        enemyListB -= enemy
       }
       if(enemySpawner != null) enemySpawner.interrupt
       stage.getScene.onKeyPressed  = null
       stage.getScene.onKeyReleased = null
+      if(audioController != null) audioController.pause
     }
     catch{
       case e : NullPointerException => e.printStackTrace
       case _ : Throwable => println("Exception found when ending game")
     }
   }
-
-  //Level up dialog
-  def showLevelUpDialog(player : Player){
-    val resource = getClass.getResourceAsStream("view/LevelUpDialog.fxml")
-    val loader = new FXMLLoader(null, NoDependencyResolver)
-    loader.load(resource);
-    val roots2  = loader.getRoot[jfxs.Parent]
-    val control = loader.getController[LevelUpDialogController#Controller]
-
-    val dialog = new Stage() {
-      initModality(Modality.ApplicationModal)
-      initOwner(stage)
-      scene = new Scene {
-        root = roots2      
-      }
-    }
-    
-    //Pause inputs and enemies
-    notPaused = false
-    leftPress = false
-    rightPress = false
-    upPress = false 
-    downPress = false
-    shoot.cancel()
-    isShooting = false
-    readyToShoot = true
-    for(enemy <- enemyListB){
-      enemy.enemyTimer.cancel
-    }
-
-    control.dialogStage = dialog
-    control.player = player
-    control.level = player.level
-    control.setText
-    Platform.runLater(dialog.showAndWait())
-  }
-
 
   //End game summary page
   def showEnd() = { 
@@ -393,6 +371,80 @@ object MainApp extends JFXApp {
     println("Updated media view")
     gameController.mediaView = new MediaView(newPlayer)
     gameRoots.children = List(gameController.canvas, gameController.mediaView)
+  }
+
+  //Level up dialog
+  def showLevelUpDialog(player : Player){
+    val resource = getClass.getResourceAsStream("view/LevelUpDialog.fxml")
+    val loader = new FXMLLoader(null, NoDependencyResolver)
+    loader.load(resource);
+    val roots2  = loader.getRoot[jfxs.Parent]
+    val control = loader.getController[LevelUpDialogController#Controller]
+
+    val dialog = new Stage() {
+      initModality(Modality.ApplicationModal)
+      initOwner(stage)
+      title = "Level Up"
+      scene = new Scene {
+        root = roots2    
+        stylesheets += getClass.getResource("view/stylesheet.css").toExternalForm()  
+      }
+    }
+    
+    //Pause inputs and enemies
+    notPaused = false
+    leftPress = false
+    rightPress = false
+    upPress = false 
+    downPress = false
+    if(shoot != null) shoot.cancel()
+    isShooting = false
+    readyToShoot = true
+    for(enemy <- enemyListB){
+      enemy.enemyTimer.cancel
+    }
+
+    control.dialogStage = dialog
+    control.player = player
+    control.level = player.level
+    control.setText
+    Platform.runLater(dialog.showAndWait())
+  }
+
+  //Level up dialog
+  def showControlDialog(){
+    val resource = getClass.getResourceAsStream("view/ControlDialog.fxml")
+    val loader = new FXMLLoader(null, NoDependencyResolver)
+    loader.load(resource);
+    val roots2  = loader.getRoot[jfxs.Parent]
+    val control = loader.getController[ControlDialogController#Controller]
+
+    val dialog = new Stage() {
+      initModality(Modality.ApplicationModal)
+      initOwner(stage)
+      title = "Controls"
+      scene = new Scene {
+        root = roots2     
+        stylesheets += getClass.getResource("view/stylesheet.css").toExternalForm() 
+      }
+    }
+    
+    //Pause inputs and enemies
+    notPaused = false
+    leftPress = false
+    rightPress = false
+    upPress = false 
+    downPress = false
+    if(shoot != null) shoot.cancel()
+    isShooting = false
+    readyToShoot = true
+    for(enemy <- enemyListB){
+      enemy.enemyTimer.cancel
+    }
+
+    control.dialogStage = dialog
+    control.audioController = audioController
+    Platform.runLater(dialog.showAndWait())
   }
 
   

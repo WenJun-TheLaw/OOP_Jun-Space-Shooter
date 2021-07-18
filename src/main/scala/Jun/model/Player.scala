@@ -16,6 +16,8 @@ class Player(
     private var _level       : Int    = 1
     private var _exp         : Int    = 0
     private var _LevelUpEXP  : Int    = 100
+    private var _name        : String = "TestName"
+    private var dead         : Boolean= false
 
     //Accessor
     def maxHealth   = _maxHealth 
@@ -23,6 +25,7 @@ class Player(
     def exp         = _exp
     def LevelUpEXP  = _LevelUpEXP
     def level       = _level
+    def name        = _name
 
     //Mutator
     def maxHealth_=(newMaxHealth : Int){
@@ -30,6 +33,9 @@ class Player(
     }
     def atkSpeed_=(newAtkSpeed : Double){
         _atkSpeed = newAtkSpeed
+    }
+    def name_=(newName : String){
+        _name = newName
     }
 
     //Functions
@@ -70,10 +76,13 @@ class Player(
     }
 
     override def death(){
-        //Game over
-        println("You ded :(")
-        MainApp.endGame
-        MainApp.showEnd
+        if(!dead){
+            dead = true
+            println("You ded :(")
+            MainApp.endGame
+            MainApp.showEnd
+        }
+        
     }
 
 

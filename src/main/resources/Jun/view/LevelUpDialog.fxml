@@ -23,18 +23,18 @@
           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
-            <Text fx:id="levelUpText" strokeType="OUTSIDE" strokeWidth="0.0" text="You have leveled up! Choose an upgrade" textAlignment="CENTER" textOrigin="TOP" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
-            <Button fx:id="atkUpButton" mnemonicParsing="false" onAction="#handleAtkUp" prefWidth="140.0" text="Attack up" textAlignment="CENTER" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
+            <Text fx:id="levelUpText" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="text" text="You have leveled up! Choose an upgrade" textAlignment="CENTER" textOrigin="TOP" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+            <Button fx:id="atkUpButton" mnemonicParsing="false" onAction="#handleAtkUp" prefHeight="100.0" prefWidth="140.0" text="Attack up" textAlignment="CENTER" textOverrun="CLIP" wrapText="true" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
                <padding>
                   <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                </padding>
             </Button>
-            <Button fx:id="atkSpeedUpButton" mnemonicParsing="false" onAction="#handleAtkSpeedUp" prefWidth="140.0" text="Attack Speed up" textAlignment="CENTER" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
+            <Button fx:id="atkSpeedUpButton" mnemonicParsing="false" onAction="#handleAtkSpeedUp" prefHeight="100.0" prefWidth="140.0" text="Attack Speed up" textAlignment="CENTER" textOverrun="CLIP" wrapText="true" GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
                <padding>
                   <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                </padding>
             </Button>
-            <Button fx:id="maxHpUpButton" mnemonicParsing="false" onAction="#handleMaxHpUp" prefWidth="140.0" text="Max Health up" textAlignment="CENTER" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
+            <Button fx:id="maxHpUpButton" mnemonicParsing="false" onAction="#handleMaxHpUp" prefHeight="100.0" prefWidth="140.0" text="Max Health up" textAlignment="CENTER" textOverrun="CLIP" wrapText="true" GridPane.columnIndex="3" GridPane.halignment="CENTER" GridPane.rowIndex="1" GridPane.valignment="CENTER">
                <padding>
                   <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                </padding>

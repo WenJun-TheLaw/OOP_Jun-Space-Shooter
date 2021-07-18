@@ -74,41 +74,46 @@ class Enemy(
     def chase(){
         val chaseTask = new TimerTask{
             override def run(): Unit = {
-                val player  = MainApp.player
-                val playerX = player.sprite.positionX
-                val random  = new Random()
-                //Random number from -100 to 100
-                val randomNum = random.nextInt(200) - 100
+                if(!dead){
+                    val player  = MainApp.player
+                    val playerX = player.sprite.positionX
+                    val random  = new Random()
+                    //Random number from -100 to 100
+                    val randomNum = random.nextInt(200) - 100
 
-                //Resetting velocity
-                sprite.velocityX = 0
-                sprite.velocityY = 0
-               
-                //Target X to move to, based on player's X + a random amount
-                val maxX = MainApp.stage.getWidth
-                val dX = playerX + randomNum
-                //If within acceptable X limits
-                if(dX < maxX || dX > 0){
-                    if(dX < sprite.positionX){
-                        sprite.velocityX = -1 * speed
+                    //Resetting velocity
+                    sprite.velocityX = 0
+                    sprite.velocityY = 0
+                
+                    //Target X to move to, based on player's X + a random amount
+                    val maxX = MainApp.stage.getWidth
+                    val dX = playerX + randomNum
+                    //If within acceptable X limits
+                    if(dX < maxX || dX > 0){
+                        if(dX < sprite.positionX){
+                            sprite.velocityX = -1 * speed
+                        }
+                        else{
+                            sprite.velocityX = 1 * speed
+                        }
                     }
-                    else{
-                        sprite.velocityX = 1 * speed
+                
+                    //Target Y to move to
+                    val dY = randomNum + sprite.positionY
+                    //40% of stage height is maximum
+                    val maxY = MainApp.stage.getHeight * 0.4
+                    //If within acceptable Y limits
+                    if(dY > 0){
+                        if(dY < sprite.positionY || sprite.positionY > maxY){
+                            sprite.velocityY = -1 * speed
+                        }
+                        else{
+                            sprite.velocityY = 1 * speed
+                        }
                     }
                 }
-              
-                //Target Y to move to
-                val dY = randomNum + sprite.positionY
-                //40% of stage height is maximum
-                val maxY = MainApp.stage.getHeight * 0.4
-                //If within acceptable Y limits
-                if(dY > 0){
-                    if(dY < sprite.positionY || sprite.positionY > maxY){
-                        sprite.velocityY = -1 * speed
-                    }
-                    else{
-                        sprite.velocityY = 1 * speed
-                    }
+                else{
+                    this.cancel
                 }
             }
         }

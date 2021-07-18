@@ -10,7 +10,6 @@ import _root_.Jun.model.Score
 import scalafx.scene.control.TableView
 import scalafx.scene.control.TableColumn
 import java.time.LocalDate
-import scalikejdbc.ConnectionPool
 
 @sfxml
 class GameOverController(
@@ -37,10 +36,9 @@ class GameOverController(
 
 
     def addScore(){
-        val score = new Score("Test Name", player.exp)
+        val score = new Score(player.name, player.exp)
         score.save()
         Score.scoreData += score
-        println("Saved score")
     }
 
     def handleClose(){

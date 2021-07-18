@@ -5,7 +5,6 @@ import scalafx.application.Platform
 import _root_.Jun.MainApp
 import scalafx.scene.control.Alert
 import _root_.Jun.model.Score
-import scalikejdbc.ConnectionPool
 
 @sfxml
 class RootLayoutController(){
@@ -26,12 +25,7 @@ class RootLayoutController(){
     }
 
     def showControls(){
-      val alert = new Alert(Alert.AlertType.Information){
-        initOwner(MainApp.stage)
-        title       = "About"
-        headerText  = "Jun Space Fighter Alpha Ver 0.1"
-        contentText = "Find out more over at https://github.com/WenJun-TheLaw/OOP_Jun-Space-Shooter"
-      }.showAndWait()
+      MainApp.showControlDialog
     }
 
 }

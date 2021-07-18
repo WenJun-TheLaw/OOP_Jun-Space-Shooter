@@ -9,8 +9,8 @@ import Jun.MainApp
 import scalafx.scene.media.MediaView
 
 class AudioController(){
-    private var _volume = 0.5
-    private val VolumeMultiplier = 0.2
+    private var _volume = 50.0
+    private val VolumeMultiplier = 0.01
     private var songList : List[Media] = null
     private var _mediaPlayer : MediaPlayer = null
 
@@ -20,10 +20,11 @@ class AudioController(){
 
     //Mutator
     /**
-     * Set the volume between 0 to 1
+     * Set the volume between 0 to 1. <br>
+     * NEVER directly access mediaPlayer.volume, this will multiply the volume by 100 fold if done incorrectly
     */
     def volume_=(newVolume : Double){
-        _volume = JunMath.clamp(newVolume, 0 ,1)
+        _volume = JunMath.clamp(newVolume, 0 , 100)
         mediaPlayer.volume = _volume * VolumeMultiplier
     }
 
@@ -35,9 +36,9 @@ class AudioController(){
         val song1 = new Media(getClass.getResource("/audio/TheFatRat - Arcadia Chapter 2.mp3").toURI().toString())
         val song2 = new Media(getClass.getResource("/audio/TheFatRat - Jackpot.mp3").toURI().toString())
         val song3 = new Media(getClass.getResource("/audio/TheFatRat - Prelude.mp3").toURI().toString())
-        val song4 = new Media(getClass.getResource("/audio/TheFatRat - Unity.wav").toURI().toString())
+        val song4 = new Media(getClass.getResource("/audio/TheFatRat - Unity.mp3").toURI().toString())
         val song5 = new Media(getClass.getResource("/audio/TheFatRat - Windfall.mp3").toURI().toString())
-        val song6 = new Media(getClass.getResource("/audio/TheFatRat - Xenogenesis.wav").toURI().toString())
+        val song6 = new Media(getClass.getResource("/audio/TheFatRat - Xenogenesis.mp3").toURI().toString())
         songList = List(song1, song2, song3, song4, song5, song6)
     }
 
@@ -49,7 +50,7 @@ class AudioController(){
         var index = random.nextInt(songList.length)
         _mediaPlayer = new MediaPlayer(songList.apply(index))
         _mediaPlayer.play()
-        _mediaPlayer.volume = _volume * VolumeMultiplier
+        _mediaPlayer.volume = _volume  * VolumeMultiplier
             
         //Increment index, reset if more than length, set new song
         _mediaPlayer.onEndOfMedia = {
