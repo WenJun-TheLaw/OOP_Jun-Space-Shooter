@@ -1,6 +1,9 @@
 # OOP_Jun-Space-Shooter
 A lil game inspired from the original space shooter written in Scala!
 
+<h2>Gameplay:</h2>
+You can take a look at the "World Premeire" game play here: https://youtu.be/Baaay5eM2mY <br>
+
 <h2>Credits:</h2>
 <h3>Space Shooter Redux:<br></h3>
 Art assets & Font<br>
